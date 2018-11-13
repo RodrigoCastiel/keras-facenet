@@ -1,8 +1,11 @@
 import glob
-import numpy as np
 import matplotlib as plt
+import numpy as np
+import os
+
 from imageio import imread
 from skimage.transform import resize
+
 import cv2
 
 
@@ -26,21 +29,74 @@ class DatasetLoader:
     filepaths = jpg_filepaths + png_filepaths
     return self.load_and_align_images(filepaths)
 
-  def load_and_align_images(self, filepaths):
-    aligned_faces = []
-    for filepath in filepaths:
-      aligned_faces.extend(self.load_and_align_img(filepath))
-    return np.array(aligned_faces)
+  def load_test_dataset(self, data_path):
+    """
+    Test dataset should contain single-face pictures only.
+    They must be grouped by similarity into different folders under 'data_path'.
+    Each folder is considered to be a cluster.
+    It returns two arrays: (images, labels).
+    """
+    if data_path[-1] != "/":
+      data_path += "/"
 
-  def load_and_align_img(self, filepath):
+    # List all paths in 'data_path', and filter in folders only.
+    folders = [(data_path + path) for path in os.listdir(data_path)
+                                  if os.path.isdir(data_path + path)]
+
+    # Load images.
+    images = []
+    labels = []
+    num_clusters = len(folders)
+    cluster = 0
+    for (i, folder) in enumerate(folders):
+      print("  Processing folder %d/%d." % (i, num_clusters), end="\r")
+      filepaths = glob.glob(folder + "/*.jpg") + glob.glob(folder + "/*.png")
+
+      # Skip folders containing only one picture.
+      if len(filepaths) < 3:
+        continue
+
+      # Load image, and crop the first detected face.
+      cluster_faces, _ = self.load_and_align_images(filepaths, False)
+      for face in cluster_faces:
+        images.append(face)
+        labels.append(cluster)
+      cluster += 1
+
+    return (np.array(images), np.array(labels))
+
+  def load_and_align_images(self, filepaths, find_all_faces=True):
+    aligned_faces = []
+    face_metadata = []
+
+    for filepath in filepaths:
+      face_pics, metadata = self.load_and_align_img(filepath, find_all_faces)
+      aligned_faces.extend(face_pics)
+      face_metadata.extend(metadata)
+
+    return np.array(aligned_faces), face_metadata
+
+  def load_and_align_img(self, filepath, find_all_faces=True):
     L = self.face_img_size
     img = imread(filepath)
+
     faces = self.cascade.detectMultiScale(img, scaleFactor=1.1, minNeighbors=3)
+    if len(faces) and not find_all_faces:
+      faces = [faces[0]]
+
     face_pics = []
+    face_metadata = []
     for (x, y, w, h) in faces:
+      if x < self.margin or y < self.margin:
+        continue
       cropped = img[y-self.margin//2:y+h+self.margin//2,
                     x-self.margin//2:x+w+self.margin//2, :]
       face_pics.append(
         resize(cropped, (L, L), mode='reflect', anti_aliasing=True)
       )
-    return face_pics
+      face_metadata.append({
+        "filepath": filepath,
+        "rect": (x, y, w, h),
+      })
+
+    return (face_pics, face_metadata)
