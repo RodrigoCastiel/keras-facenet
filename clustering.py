@@ -10,6 +10,8 @@ from matplotlib import pyplot as plt
 import argparse
 import numpy as np
 
+import sklearn.model_selection
+import sklearn.utils
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
@@ -107,15 +109,32 @@ def visualize_tsne(X, w_train):
   plt.show()
 
 
-def evaluate_kmeans(X, w_true):
+def evaluate_kmeans(X_data, w_true):
   K = len(np.unique(w_true))
 
-  # Perform K-means clustering.
-  print("\nPerforming K-means clustering with K = %d." % K)
-  kmeans = KMeans(n_clusters=K, random_state=0).fit(X)
-  w_pred = kmeans.labels_
-  score = metrics.adjusted_rand_score(w_true, w_pred)
-  print("K-means adjusted_rand_score: %f. " % score)
+  print("\nPerforming cross-validation on K-means with K = %d." % K)
+  scores = perform_cross_validation(
+    KMeans(n_clusters=K, random_state=0),
+    X_data,
+    w_true,
+    num_folds_cv=30,
+  )
+
+  avg_score = np.mean(scores)
+  error_margin = 2*np.std(scores)
+  print("Adjusted Rand Scores: ")
+  print(scores)
+  print("Average Score: %f (+/- %f). " % (avg_score, error_margin))
+
+
+def perform_cross_validation(classifier, X_data, w_true, num_folds_cv):
+  scorer = sklearn.metrics.make_scorer(metrics.adjusted_rand_score)
+  skf = sklearn.model_selection.KFold(n_splits=num_folds_cv)
+  scores = sklearn.model_selection.cross_val_score(
+    classifier, X_data, w_true, scoring=scorer, cv=skf, n_jobs=-1, verbose=False,
+  )
+  return scores
+
 
 if __name__ == "__main__":
   main()
