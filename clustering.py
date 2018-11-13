@@ -113,10 +113,9 @@ def evaluate_kmeans(X, w_true):
   # Perform K-means clustering.
   print("\nPerforming K-means clustering with K = %d." % K)
   kmeans = KMeans(n_clusters=K, random_state=0).fit(X)
-  w_est = kmeans.labels_
-  rand_score = metrics.adjusted_rand_score(w_true, w_est)
-  print("Adjusted Rand Score: %d. " % rand_score)
-  print(np.array([w_est, w_true]).T)
+  w_pred = kmeans.labels_
+  score = metrics.adjusted_rand_score(w_true, w_pred)
+  print("K-means adjusted_rand_score: %f. " % score)
 
 if __name__ == "__main__":
   main()
