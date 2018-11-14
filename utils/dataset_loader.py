@@ -17,19 +17,20 @@ class DatasetLoader:
     self.cascade_path = 'model/cv2/haarcascade_frontalface_alt2.xml'
     self.cascade = cv2.CascadeClassifier(self.cascade_path)
 
-  def load_from_folder(self, folder_path):
+  def load_from_folder(self, folder_path, use_raw=False):
     jpg_filepaths = glob.glob(folder_path + "*.jpg")
     png_filepaths = glob.glob(folder_path + "*.png")
     filepaths = jpg_filepaths + png_filepaths
-    return self.load_and_align_images(filepaths)
+    return self.load_and_align_images(filepaths, use_raw=use_raw)
 
-  def load_from_folder_recursive(self, base_folder_path):
+  def load_from_folder_recursive(self, base_folder_path, use_raw=False):
     jpg_filepaths = glob.glob(base_folder_path + "/**/*.jpg", recursive=True)
     png_filepaths = glob.glob(base_folder_path + "/**/*.png", recursive=True)
     filepaths = jpg_filepaths + png_filepaths
-    return self.load_and_align_images(filepaths)
+    print("Loading %d images.." % len(filepaths))
+    return self.load_and_align_images(filepaths, use_raw=use_raw)
 
-  def load_test_dataset(self, data_path):
+  def load_test_dataset(self, data_path, use_raw=False):
     """
     Test dataset should contain single-face pictures only.
     They must be grouped by similarity into different folders under 'data_path'.
@@ -57,7 +58,7 @@ class DatasetLoader:
         continue
 
       # Load image, and crop the first detected face.
-      cluster_faces, _ = self.load_and_align_images(filepaths, False)
+      cluster_faces, _ = self.load_and_align_images(filepaths, False, use_raw)
       for face in cluster_faces:
         images.append(face)
         labels.append(cluster)
@@ -65,23 +66,29 @@ class DatasetLoader:
 
     return (np.array(images), np.array(labels))
 
-  def load_and_align_images(self, filepaths, find_all_faces=True):
+  def load_and_align_images(self, filepaths, all_faces=True, use_raw=False):
     aligned_faces = []
     face_metadata = []
 
     for filepath in filepaths:
-      face_pics, metadata = self.load_and_align_img(filepath, find_all_faces)
+      face_pics, metadata = self.load_and_align_img(filepath, all_faces, use_raw)
       aligned_faces.extend(face_pics)
       face_metadata.extend(metadata)
 
     return np.array(aligned_faces), face_metadata
 
-  def load_and_align_img(self, filepath, find_all_faces=True):
+  def load_and_align_img(self, filepath, all_faces=True, use_raw=False):
     L = self.face_img_size
     img = imread(filepath)
 
+    if use_raw:
+      return ([img], [{
+        "filepath": filepath,
+        "rect": (0, 0, img.shape[1], img.shape[0]),
+      }])
+
     faces = self.cascade.detectMultiScale(img, scaleFactor=1.1, minNeighbors=3)
-    if len(faces) and not find_all_faces:
+    if len(faces) and not all_faces:
       faces = [faces[0]]
 
     face_pics = []
