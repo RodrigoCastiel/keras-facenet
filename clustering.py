@@ -46,16 +46,20 @@ def main():
   print("Loading complete.")
   print("%d data points extracted from %d clusters." % (w_true.shape[0], K))
 
-  # Evaluate different clustering methods using cross-validation.
-  kmeans = sklearn.cluster.KMeans(n_clusters=K, random_state=0)
-  agglomerative = sklearn.cluster.AgglomerativeClustering(n_clusters=K)
-  spectral = sklearn.cluster.SpectralClustering(n_clusters=K, random_state=0)
-  methods = [spectral, kmeans, agglomerative]
-  evaluate_clustering_methods(methods, X, w_true)
+  sklearn.cluster.MeanShift
 
   # Optionally, visualize dataset using TSNE.
   if args.show_tsne:
     visualize_tsne(X, w_true)
+
+  # Evaluate different clustering methods.
+  methods = [
+    ("mean-shift", 0.6),
+    ("k-means", K),
+    ("agglomerative", K),
+    ("spectral", K),
+  ]
+  evaluate_clustering_methods(methods, X, w_true, n_times=1)
 
 
 def load_images_and_compute_embeddings(dataset_name, use_raw):
@@ -99,19 +103,36 @@ def visualize_tsne(X, w_train):
 
 def evaluate_clustering_methods(methods, X_data, w_true, n_times=30):
   scores = []
-  max_len = 44
+  max_len = 42
+  loading = [
+    "|=      |",
+    "|==     |",
+    "|===    |",
+    "| ===   |",
+    "|  ===  |",
+    "|   === |",
+    "|    ===|",
+    "|     ==|",
+    "|      =|",
+    "|       |",
+  ]
 
+  print("\n----------------------- Clustering Evaluation ------------------------")
   for method in methods:
-    clustering_name = type(method).__name__
+    clustering_name = method[0]
     scores = np.zeros(n_times)
     for i in range(n_times):
-      print("  Running clustering %d/%d..." % (i+1, n_times), end='\r')
+      print(
+        "  %s Running %s clustering %d/%d..." 
+          % (loading[i % len(loading)], method[0], i+1, n_times),
+        end='\r',
+      )
       # Shuffle dataset.
       indices = np.arange(len(w_true))
       np.random.shuffle(indices)
 
       # Fit and predict clustering method on shuffled (X_data, w_true).
-      clustering = sklearn.base.clone(method)
+      clustering = build_clustering_method(method[0], method[1:])
       w_pred = clustering.fit_predict(X_data[indices])
       scores[i] = sklearn.metrics.adjusted_rand_score(w_true[indices], w_pred)
 
@@ -124,22 +145,24 @@ def evaluate_clustering_methods(methods, X_data, w_true, n_times=30):
       "+ %s %s %lf%% (+/- %lf)"
       % (clustering_name, num_dots*".", avg_score, error_margin)
     )
+  print("----------------------------------------------------------------------\n")
 
 
-def perform_cross_validation(classifier, X_data, w_true, num_folds_cv):
-  scorer = sklearn.metrics.make_scorer(sklearn.metrics.adjusted_rand_score)
-  skf = sklearn.model_selection.KFold(n_splits=num_folds_cv)
-  scores = sklearn.model_selection.cross_val_score(
-    classifier,
-    X_data,
-    w_true,
-    scoring=scorer,
-    cv=skf,
-    n_jobs=-1,
-    verbose=True,
-  )
-
-  return scores
+def build_clustering_method(method_name, parameters):
+  if method_name == "k-means":
+    K = parameters[0]
+    return sklearn.cluster.KMeans(n_clusters=K)
+  elif method_name == "agglomerative":
+    K = parameters[0]
+    return sklearn.cluster.AgglomerativeClustering(n_clusters=K)
+  elif method_name == "spectral":
+    K = parameters[0]
+    return sklearn.cluster.SpectralClustering(n_clusters=K)
+  elif method_name == "mean-shift":
+    bandwidth = parameters[0]
+    return sklearn.cluster.MeanShift(bandwidth=bandwidth)
+  else:
+    return None
 
 
 def parse_command_line_args():
