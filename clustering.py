@@ -25,6 +25,8 @@ cached_embeddings_filepath = ".cached_files/embeddings-"
 cached_labels_filepath = ".cached_files/labels-"
 facenet_model_filepath = 'model/keras/model/facenet_keras.h5'
 
+validation_set_fraction = 0.8
+n_times = 30
 
 def main():
   # Parse command line arguments.
@@ -60,9 +62,9 @@ def main():
   dbscan_methods = [("dbscan", n/10.0, 1) for n in range(1, 13)]
   meanshift_methods = [("mean-shift", n/10.0) for n in range(1, 13)]
   methods = [
-    ("k-means", K),
-    ("agglomerative", K),
-    ("spectral", K),
+    ("k-means", 3),
+    ("agglomerative", "opt"),
+    ("spectral", "opt"),
   ] + dbscan_methods + meanshift_methods
 
   evaluate_clustering_methods(
@@ -70,7 +72,6 @@ def main():
     X,
     w_true,
     experiment_mode=args.experiment_mode,
-    n_times=10
   )
 
 
@@ -122,7 +123,6 @@ def evaluate_clustering_methods(
   X_data,
   w_true,
   experiment_mode=False,
-  n_times=30,
 ):
   scores = []
   loading = [
@@ -142,12 +142,13 @@ def evaluate_clustering_methods(
             % (loading[i % len(loading)], method[0], i+1, n_times),
           end='\r',
         )
-      # Shuffle dataset.
-      indices = np.arange(len(w_true))
-      np.random.shuffle(indices)
+      # Sample for multistep validation.
+      validation_set_size = int(X_data.shape[0] * validation_set_fraction)
+      indices = np.random.choice(X_data.shape[0], validation_set_size)
 
       # Fit and predict clustering method on shuffled (X_data, w_true).
-      clustering = build_clustering_method(method[0], method[1:])
+      n_clusters = len(np.unique(w_true[indices]))
+      clustering = build_clustering_method(method[0], method[1:], n_clusters)
       w_pred = clustering.fit_predict(X_data[indices])
       scores[i] = sklearn.metrics.adjusted_rand_score(w_true[indices], w_pred)
 
@@ -174,15 +175,15 @@ def evaluate_clustering_methods(
   print()
 
 
-def build_clustering_method(method_name, parameters):
+def build_clustering_method(method_name, parameters, n_clusters):
   if method_name == "k-means":
-    K = parameters[0]
+    K = n_clusters if parameters[0] == "opt" else parameters[0]
     return sklearn.cluster.KMeans(n_clusters=K)
   elif method_name == "agglomerative":
-    K = parameters[0]
+    K = n_clusters if parameters[0] == "opt" else parameters[0]
     return sklearn.cluster.AgglomerativeClustering(n_clusters=K)
   elif method_name == "spectral":
-    K = parameters[0]
+    K = n_clusters if parameters[0] == "opt" else parameters[0]
     return sklearn.cluster.SpectralClustering(n_clusters=K)
   elif method_name == "mean-shift":
     bandwidth = parameters[0]
