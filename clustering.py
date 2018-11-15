@@ -62,7 +62,7 @@ def main():
   dbscan_methods = [("dbscan", n/10.0, 1) for n in range(1, 13)]
   meanshift_methods = [("mean-shift", n/10.0) for n in range(1, 13)]
   methods = [
-    ("k-means", 3),
+    ("k-means", "opt"),
     ("agglomerative", "opt"),
     ("spectral", "opt"),
   ] + dbscan_methods + meanshift_methods
@@ -130,7 +130,7 @@ def evaluate_clustering_methods(
     "|   === |", "|    ===|", "|     ==|", "|      =|", "|       |",
   ]
 
-  print("\n----------------------- Clustering Evaluation ------------------------")
+  print("\n----------------- Clustering Evaluation -----------------")
   scores_table = []
   max_len = 30
   for method in methods:
@@ -163,7 +163,10 @@ def evaluate_clustering_methods(
       "+ %s %s %lf (+/- %lf)"
       % (clustering_name, num_dots*".", avg_score, error_margin)
     )
-  print("----------------------------------------------------------------------\n")
+  print("---------------------------------------------------------\n\n")
+  print("validation_set_fraction =", validation_set_fraction)
+  print("n _times =", n_times)
+  print()
   print("Clustering Scores (adjusted_rand_index)")
   scores_table = np.array(scores_table)
   for i, method in enumerate(methods):
