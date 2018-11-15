@@ -3,6 +3,7 @@ matplotlib.use("TkAgg")
 from matplotlib import pyplot as plt
 
 import argparse
+import logging as log
 import os
 import numpy as np
 import shutil
@@ -11,6 +12,7 @@ import sklearn.manifold
 import sklearn.metrics
 import sklearn.model_selection
 import sklearn.utils
+import sys
 
 from utils.dataset_loader import DatasetLoader
 from code.trained_keras_facenet import TrainedKerasFacenet
@@ -37,7 +39,11 @@ def main():
   dataset_name = args.dataset
   if args.compute_embeddings:
     # Load dataset, load facenet model and compute embeddings.
-    X, w_true = load_images_and_compute_embeddings(dataset_name, args.use_raw)
+    X, w_true = load_images_and_compute_embeddings(
+      dataset_name,
+      args.use_raw,
+      args.min_threshold,
+    )
   else:
     # Load cached embeddings and labels.
     X, w_true = load_embeddings_and_labels(dataset_name)
@@ -46,28 +52,34 @@ def main():
   print("Loading complete.")
   print("%d data points extracted from %d clusters." % (w_true.shape[0], K))
 
-  sklearn.cluster.MeanShift
-
   # Optionally, visualize dataset using TSNE.
   if args.show_tsne:
     visualize_tsne(X, w_true)
 
   # Evaluate different clustering methods.
+  dbscan_methods = [("dbscan", n/10.0, 1) for n in range(1, 13)]
+  meanshift_methods = [("mean-shift", n/10.0) for n in range(1, 13)]
   methods = [
-    ("mean-shift", 0.6),
     ("k-means", K),
     ("agglomerative", K),
     ("spectral", K),
-  ]
-  evaluate_clustering_methods(methods, X, w_true, n_times=1)
+  ] + dbscan_methods + meanshift_methods
+
+  evaluate_clustering_methods(
+    methods,
+    X,
+    w_true,
+    experiment_mode=args.experiment_mode,
+    n_times=10
+  )
 
 
-def load_images_and_compute_embeddings(dataset_name, use_raw):
+def load_images_and_compute_embeddings(dataset_name, use_raw, min_threshold):
   # Load image dataset (default).
   dataset_path = "data/" + dataset_name + "/"
   print("Loading pictures under '%s'." % dataset_path)
   loader = DatasetLoader()
-  faces, labels = loader.load_test_dataset(dataset_path, use_raw=use_raw)
+  faces, labels = loader.load_test_dataset(dataset_path, use_raw, min_threshold)
   print(">> %d face pictures extracted." % faces.shape[0])
 
   # Load pre-trained facenet model, and compute embeddings.
@@ -96,37 +108,40 @@ def visualize_tsne(X, w_train):
   X_transformed = tsne.fit_transform(X)
   x = X_transformed[:, 0]
   y = X_transformed[:, 1]
-  plt.scatter(x, y, c='r', marker='o')
-  plt.title('Embedding Vectors')
+
+  num_clusters = np.unique(w_train).shape[0]
+  color_map = plt.cm.get_cmap('nipy_spectral', num_clusters)
+  plt.scatter(x, y, lw=0.1, c=w_train, cmap=color_map)
+  plt.colorbar(ticks=range(num_clusters), label='cluster')
+  plt.title('Ground-truth Embedding Clusters')
   plt.show()
 
 
-def evaluate_clustering_methods(methods, X_data, w_true, n_times=30):
+def evaluate_clustering_methods(
+  methods,
+  X_data,
+  w_true,
+  experiment_mode=False,
+  n_times=30,
+):
   scores = []
-  max_len = 42
   loading = [
-    "|=      |",
-    "|==     |",
-    "|===    |",
-    "| ===   |",
-    "|  ===  |",
-    "|   === |",
-    "|    ===|",
-    "|     ==|",
-    "|      =|",
-    "|       |",
+    "|=      |", "|==     |", "|===    |", "| ===   |", "|  ===  |",
+    "|   === |", "|    ===|", "|     ==|", "|      =|", "|       |",
   ]
 
   print("\n----------------------- Clustering Evaluation ------------------------")
+  scores_table = []
+  max_len = 30
   for method in methods:
-    clustering_name = method[0]
     scores = np.zeros(n_times)
     for i in range(n_times):
-      print(
-        "  %s Running %s clustering %d/%d..." 
-          % (loading[i % len(loading)], method[0], i+1, n_times),
-        end='\r',
-      )
+      if not experiment_mode:
+        print(
+          "  %s Running %s clustering %d/%d..." 
+            % (loading[i % len(loading)], method[0], i+1, n_times),
+          end='\r',
+        )
       # Shuffle dataset.
       indices = np.arange(len(w_true))
       np.random.shuffle(indices)
@@ -138,14 +153,25 @@ def evaluate_clustering_methods(methods, X_data, w_true, n_times=30):
 
     avg_score = np.mean(scores)
     error_margin = 2*np.std(scores)
+    scores_table.append(scores)
 
-    # Print out the results.
+    # Print adjusted rand index.
+    clustering_name = str(method)
     num_dots = max_len - len(clustering_name)
     print(
-      "+ %s %s %lf%% (+/- %lf)"
+      "+ %s %s %lf (+/- %lf)"
       % (clustering_name, num_dots*".", avg_score, error_margin)
     )
   print("----------------------------------------------------------------------\n")
+  print("Clustering Scores (adjusted_rand_index)")
+  scores_table = np.array(scores_table)
+  for i, method in enumerate(methods):
+    num_spaces = max_len - len(str(method))
+    print(str(method) + (" " * num_spaces), end="")
+    for j in range(scores_table.shape[1]):
+      print(" %1.6f" % scores_table[i][j], end="")
+    print()
+  print()
 
 
 def build_clustering_method(method_name, parameters):
@@ -161,6 +187,10 @@ def build_clustering_method(method_name, parameters):
   elif method_name == "mean-shift":
     bandwidth = parameters[0]
     return sklearn.cluster.MeanShift(bandwidth=bandwidth)
+  elif method_name == "dbscan":
+    eps = parameters[0]
+    min_samples = parameters[1]
+    return sklearn.cluster.DBSCAN(eps=eps, min_samples=min_samples)
   else:
     return None
 
@@ -191,8 +221,27 @@ def parse_command_line_args():
     type=bool,
     default=False,
   )
+  parser.add_argument(
+    "--min_threshold",
+    help="Minimum number of pictures per folder.",
+    type=int,
+    default=1,
+  )
+  parser.add_argument(
+    "--experiment_mode",
+    help="True iff experiment mode (redirects stdout).",
+    type=bool,
+    default=False,
+  )
   args = parser.parse_args()
   print(args)
+
+  if args.experiment_mode:
+    log_filepath = "%s.txt" % args.dataset
+    print("Redirecting stdout to '%s'." % log_filepath)
+    sys.stdout = open(log_filepath, 'w')
+    print(args)
+
   return args
 
 

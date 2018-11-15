@@ -92,6 +92,10 @@ def build_clustering_method(method_name, parameters):
   elif method_name == "mean-shift":
     bandwidth = parameters[0]
     return sklearn.cluster.MeanShift(bandwidth=bandwidth)
+  elif method_name == "dbscan":
+    eps = parameters[0]
+    min_samples = parameters[1]
+    return sklearn.cluster.DBSCAN(eps=eps, min_samples=min_samples)
   else:
     return None
 

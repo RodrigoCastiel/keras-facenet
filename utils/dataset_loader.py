@@ -30,7 +30,7 @@ class DatasetLoader:
     print("Loading %d images.." % len(filepaths))
     return self.load_and_align_images(filepaths, use_raw=use_raw)
 
-  def load_test_dataset(self, data_path, use_raw=False):
+  def load_test_dataset(self, data_path, use_raw, min_threshold):
     """
     Test dataset should contain single-face pictures only.
     They must be grouped by similarity into different folders under 'data_path'.
@@ -43,18 +43,16 @@ class DatasetLoader:
     # List all paths in 'data_path', and filter in folders only.
     folders = [(data_path + path) for path in os.listdir(data_path)
                                   if os.path.isdir(data_path + path)]
-
     # Load images.
     images = []
     labels = []
     num_clusters = len(folders)
     cluster = 0
     for (i, folder) in enumerate(folders):
+      # Skip folders containing only one picture.
       print("  Processing folder %d/%d." % (i, num_clusters), end="\r")
       filepaths = glob.glob(folder + "/*.jpg") + glob.glob(folder + "/*.png")
-
-      # Skip folders containing only one picture.
-      if len(filepaths) < 3:
+      if len(filepaths) < min_threshold:
         continue
 
       # Load image, and crop the first detected face.
