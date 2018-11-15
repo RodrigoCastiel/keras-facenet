@@ -56,7 +56,7 @@ def main():
 
   # Optionally, visualize dataset using TSNE.
   if args.show_tsne:
-    visualize_tsne(X, w_true)
+    visualize_tsne(X, w_true, dataset_name)
 
   # Evaluate different clustering methods.
   dbscan_methods = [("dbscan", n/10.0, 1) for n in range(1, 13)]
@@ -104,7 +104,7 @@ def load_embeddings_and_labels(dataset_name):
   return (X, w_true)
 
 
-def visualize_tsne(X, w_train):
+def visualize_tsne(X, w_train, dataset_name):
   tsne = sklearn.manifold.TSNE(n_components=2)
   X_transformed = tsne.fit_transform(X)
   x = X_transformed[:, 0]
@@ -112,9 +112,12 @@ def visualize_tsne(X, w_train):
 
   num_clusters = np.unique(w_train).shape[0]
   color_map = plt.cm.get_cmap('nipy_spectral', num_clusters)
-  plt.scatter(x, y, lw=0.1, c=w_train, cmap=color_map)
-  plt.colorbar(ticks=range(num_clusters), label='cluster')
-  plt.title('Ground-truth Embedding Clusters')
+  plt.scatter(x, y, lw=0.1, c=w_train, cmap=color_map, edgecolors='black')
+  plt.colorbar(label='cluster index')
+  plt.title('TSNE Feature-Space Visualization on *%s*' % dataset_name)
+  plt.xlabel("X")
+  plt.ylabel("Y")
+  plt.savefig("tsne_view_%s.pdf" % dataset_name)
   plt.show()
 
 
