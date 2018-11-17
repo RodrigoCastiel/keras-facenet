@@ -90,7 +90,7 @@ There is much less overlapping than in LFW; in general, clusters are dense and c
     \includegraphics[width=\linewidth]{tsne_view_muct}
     \caption{}
   \end{subfigure}
-  \caption{TSNE visualization of multiple databases in a 2D feature-space. Cluster indices are assigned to random colors. (a) personal\_faces. (b) LFW. (c) MUCT.}
+  \caption{TSNE visualization of multiple databases in a reduced 2D feature-space. Cluster indices are assigned to random colors. (a) personal\_faces. (b) LFW. (c) MUCT.}
   \label{tsneview}
 \end{figure}
 
@@ -98,7 +98,7 @@ There is much less overlapping than in LFW; in general, clusters are dense and c
 
 \begin{figure}[h]
   \includegraphics[width=\linewidth]{pipeline.png}
-  \caption{Validation set creation pipeline.}
+  \caption{Test subset creation pipeline. In the first step, raw images are loaded from the database. Then, OpenCV's cascade classifier is applied on the images to extract faces and resize them to $160\times160$. Afterwards, we evaluate FaceNet on each face picture to get the embeddings (feature-vectors). In each run, we sample a random subset of embeddings and feed it to clustering methods.}
   \label{pipeline}
 \end{figure}
 
@@ -120,13 +120,30 @@ In other words, their best hyper-parameters are about the same for any database.
 
 \subsection{Results}
 
-\subsubsection{Score Analysis}
+\textbf{Score Analysis}. As previously mentioned, the average $ARI$ and the standard deviation are computed for each series of runs (depicted as entries of Table \ref{scores_table}).
+On the \textit{personal\_faces} database, DBSCAN with $eps = 0.8$ achieves $ARI_{DBSCAN} = 0.903226$, outperforming all the other methods.
+Mean-shift with $bw = 0.8$ achieves $ARI_{ms} = 0.898702$, a similar result.
+Spectral clustering produces the worst score: $ARI_{spectral} = 0.697063$.
+On LFW, mean-shift for $bw = 0.7$ achieves $ARI_{ms} = 0.980598$, followed by DBSCAN for $eps = 0.7$ with $ARI_{DBSCAN} = 0.956498$.
+K-means, agglomerative clustering and spectral clustering produce poor results, with $ARI < 0.50$.
+On MUCT, all methods yield roughly similar results, but agglomerative clustering achieves a slightly better score, with $ARI_{agg} = 0.987609$.
+
+As showed in Table \ref{scores_table}, even when the number of clusters $K$ is known a priori, k-means, agglomerative and spectral clustering generally have lower scores.
+However, DBSCAN and mean-shift are able to achieve good results without the need for tuning their hyper-parameters.
+For example, mean-shift with $bw =0.7$ outpeforms the $K$-based methods on \textit{personal\_faces} and LFW, and achieves similar scores on MUCT.
+Since MUCT is a database containing only a predetermined set of lighting and camera configurations, it is expected that all methods would perform well on it.
+Yet, in practice, real picture datasets tend to follow the characteristics of \textit{personal\_faces} and LFW.
+That is, they contain highly scattered clusters with unbalanced number of pictures per person.
+Also, the number of people is not known in advance.
+Therefore, DBSCAN and mean-shift may be the best options for organizing a list of random face pictures into groups of people.
 
 \begin{table*}[t]
   \centering
   \begin{tabular}{ | l*{4}{c} | }
     \hline
-    METHOD               & \vline & \textit{personal\_faces} & LFW & MUCT \\
+                         & \vline &                          & Average $ARI$ ($2*std$) &     \\
+    \hline
+    METHOD (parameter)   & \vline & \textit{personal\_faces} & LFW                    & MUCT \\
     \hline
     k-means (opt)        & \vline & 0.815486 (+/- 0.230988) & 0.393992 (+/- 0.047119) & 0.966178 (+/- 0.009708) \\
     agglomerative (opt)  & \vline & 0.812108 (+/- 0.212971) & 0.440203 (+/- 0.030589) & 0.987609 (+/- 0.006514) \\
@@ -159,23 +176,17 @@ In other words, their best hyper-parameters are about the same for any database.
     mean-shift $bw =1.2$ & \vline & 0.000000 (+/- 0.000000) & 0.000000 (+/- 0.000000) & 0.000000 (+/- 0.000000) \\
     \hline
   \end{tabular}
-  \caption{Blabla}
-  \label{tab:1}
+  \caption{Average $ARI$ score of all methods on different databases (together with their standard deviations). Each row represents a clustering technique with a specific parameter value, while each column is a database. In DBSCAN rows, $eps$ means the maximum possible distance between points in the same cluster. In mean-shift rows, $bw$ stands for bandwidth. }
+  \label{scores_table}
 \end{table*}
 
-Add table of all average scores (method vs. dataset).
-
-Briefly explain table results.
-
-Explain why DBSCAN and mean-shift are the best options.
-
-\subsubsection{DBSCAN and Mean-shift parameter analysis}
+\textbf{DBSCAN and Mean-shift parameter analysis}.
 
 Add plot of score vs eps and score vs bandwidth.
 
 Explain plots.
 
-\subsubsection{Semantics Analysis}
+\textbf{Semantics Analysis}
 
 Explain secondary tool that groups photos.
 
