@@ -103,9 +103,12 @@ There is much less overlapping than in LFW; in general, clusters are dense and c
 \end{figure}
 
 In order to properly assess the quality of the clustering techniques, we evaluate the \textit{adjusted rand index} (or simply $ARI$ \cite{??}) of each method on a series of random subsets sampled from the entire input databases.
-Each clustering method, with its given parameter values, is executed $n_{eval} = 30$ times on a randomly sampled subset whose size is approximately $80\%$ of the database size.
+Each clustering method, with its given parameter values, is executed $n_{eval} = 30$ times on a randomly sampled subset whose size is approximately $80\%$ of the total database size.
 At the end, we compute the average $ARI$ score of each set of runs.
 Figure \ref{pipeline} depicts the stages of our clustering experiments.
+We use a precomputed \textit{FaceNet} model trained on the Microsoft's MS-Celeb-1M database.
+This model was implemented by \textit{nyoki-mtl}, and is available on his \href{https://github.com/nyoki-mtl/keras-facenet}{github page}.
+It takes a $160 \times 160$ picture as input, and outputs a $128$-dimensional feature vector.
 
 Recall that k-means, agglomerative clustering and spectral clustering need a hyper-parameter $K$, that is, the number of clusters to be found.
 If $K$ is less than the actual number of people, these methods will tend to group similar people into the same clusters.
@@ -120,7 +123,7 @@ In other words, their best hyper-parameters are about the same for any database.
 
 \subsection{Results}
 
-\textbf{Score Analysis}. As previously mentioned, the average $ARI$ and the standard deviation are computed for each series of runs (depicted as entries of Table \ref{scores_table}).
+\textbf{Score Analysis}. As previously mentioned, the average $ARI$ and the standard deviation are computed for each series of runs, depicted as entries of Table \ref{scores_table}.
 On the \textit{personal\_faces} database, DBSCAN with $eps = 0.8$ achieves $ARI_{DBSCAN} = 0.903226$, outperforming all the other methods.
 Mean-shift with $bw = 0.8$ achieves $ARI_{ms} = 0.898702$, a similar result.
 Spectral clustering produces the worst score: $ARI_{spectral} = 0.697063$.
@@ -182,7 +185,7 @@ Therefore, DBSCAN and mean-shift may be the best options for organizing a list o
 
 \textbf{Mean-shift and DBSCAN hyper-parameter analysis}. To understand the impact of $bw$ (bandwidth) and $eps$ (minimum distance between points in the same cluster) on mean-shift and DBSCAN, respectively, we plot the scores \textit{vs} the parameter values on different datasets (Figure \ref{parameter_plot}).
 An interesting pattern arising from the plots is that the more spread-out the clusters are, the larger the optimal $bw$ and $eps$ will be.
-That is, the peaks show up in higher values of bandwidth and $eps$.
+That is, the peaks show up at higher values of bandwidth and $eps$.
 Nonetheless, these parameters are not so sensitive (peaks are wide).
 As mentioned above, real world pictures tend to generate scattered, sometimes overlapped clusters.
 Therefore, higher distance parameters such as $bw, eps \approx 0.7$ are usually preferred.
@@ -206,20 +209,64 @@ For this reason, if the parameters are not well chosen, these algorithms will pr
 
 
 
-\textbf{Semantics Analysis}
+\textbf{Semantics Analysis}. To help visualize how errors are manifested over different techniques, we created a tool that organizes databases by grouping photos that share the same person.
+We tested it on \textit{personal\_faces} and analyzed results manually and qualitatively.
+In all cases, we notice that wrong picture assignments are usually correlated with similar face traits such as shape (of head, nose and mouth), beard color, the presence of glasses and the ethnicity.
+For more details, see Figures \ref{wrong_similar} and \ref{wrong_ethnical}.
+In this sense, FaceNet does a great job estimating informative and high-quality embeddings (feature vectors).
 
-Explain secondary tool that groups photos.
+Regarding DBSCAN and mean-shift, the main downside is that they may overestimate the number of clusters depending on the parameter values.
+Although their scores are high on small datasets, they can end up splitting up real clusters into smaller subgroups.
+This also happens sometimes with $K$-based algorithms.
+An underlying problem which no technique avoided is assigning the same person with and without sunglasses to different clusters (Figure \ref{wrong_split}).
 
-Write about problems with sunglasses, ethnical groups, similar shapes, etc.
+\begin{figure}
+  \centering
+  \begin{subfigure}[b]{0.2\textwidth}
+    \includegraphics[width=\linewidth]{wrong_similar_a}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.2\textwidth}
+    \includegraphics[width=\linewidth]{wrong_similar_b}
+  \end{subfigure}
+  \caption{Different people assigned to the same k-means cluster. Notice the face similarity: the nose and mouth shape are close; also both use glasses.}
+  \label{wrong_similar}
+\end{figure}
 
-Write that agglomerative clustering finds the best grouping when K is known.
+\begin{figure}
+  \centering
+  \begin{subfigure}[b]{0.2\textwidth}
+    \includegraphics[width=\linewidth]{wrong_ethnical_a}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.2\textwidth}
+    \includegraphics[width=\linewidth]{wrong_ethnical_b}
+  \end{subfigure}
+  \caption{Different people assigned to the same group by agglomerative clustering. Both people share the same ethnical group, though they are clearly distinguishable by humans.}
+  \label{wrong_ethnical}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \begin{subfigure}[b]{0.2\textwidth}
+    \includegraphics[width=\linewidth]{wrong_split_a}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.2\textwidth}
+    \includegraphics[width=\linewidth]{wrong_split_b}
+  \end{subfigure}
+  \caption{Same person assigned to different clusters because of sunglasses. As humans, we clearly see that the hairstyle, the smile and the nose shapes are all preserved in both pictures. This mistake was made by all methods, which shows that the corresponding FaceNet embeddings are intrinsically distant.}
+  \label{wrong_split}
+\end{figure}
 
 \section{Conclusion}
 
-Write about the advantages of DBSCAN and mean-shift.
+When $K$ is not known a priori, DBSCAN and mean-shift are the best scoring options for face clustering of large databases.
+Their hyper-parameters are not sensitive to different input datasets.
+However, if $K$ is known, agglomerative cluster is a good option since it does not overestimate the number of clusters.
+Similarly DBSCAN, it is also able to find arbitrarily shaped clusters.
 
-Write about downsides of facenet (sunglasses, for example).
-Explain why classification can be better than clustering.
+Our experiments suggest that, regardless of method, the FaceNet model trained on MS-Celeb-1M is sensitive to sunglasses.
+Moreover, classification ends up being more accurate than clustering, because it handles overlapping better.
+For example, a simple k-NN classifier would be able to correctly predict faces of similar people by votation, whereas clustering methods would not clearly know whether data samples belong to the same person or not.
+As future work, we plan to study the impact of face expression and accessories on the embeddings computed by FaceNet trained on different databases.
 
 \begin{thebibliography}{00}
 \bibitem{b1} Francisco de A.T. de Carvalho, Eduardo C. Simões, Lucas V.C. Santana, Marcelo R.P. Ferreira,
