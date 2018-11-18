@@ -41,7 +41,7 @@ FaceNet may be combined with different clustering methods and classifiers; on fa
 In this paper, we use FaceNet as a feature extractor to perform a face clustering analysis on three different databases: a small personal dataset, Labeled Faces in the Wild (LFW) and MUCT.
 Our goal is to group pictures by person.
 We run k-means, agglomerative clustering, spectral clustering, DBSCAN and mean-shift with different parameters on all datasets.
-Experiments show that both DBSCAN and mean-shift achieve the best adjusted rand scores without even requiring the number of clusters in advance.
+Experiments show that both DBSCAN and mean-shift achieve the best adjusted rand scores without even requiring the number of clusters to be known in advance.
 
 \end{abstract}
 
@@ -51,12 +51,28 @@ clustering, deep-learning, face recognition, facenet
 
 \section{Introduction}
 
+Face recognition is a widely studied research field, whose large number of applications range from biometry to security.
+While traditional techniques required a predetermined set of features which were manually chosen by humans, recent papers propose advanced systems capable of learning the most informative and even abstract attributes for classification \cite{??}[survey].
+In 2015, Schroff et al. \cite{??} developed a novel system called \textit{FaceNet}.
+Unlike previous deep learning approaches, FaceNet introduces the harmonic triplet loss function, which is the key for learning the embedding with greater \textit{representional efficiency}.
+
+According to the authors, FaceNet may be easily used for tasks like clustering and classification, since it is able to compute $128$-dimensional feature-vectors in an euclidean space where distances model the similarity between people.
+The paper presents record holder classification results on famous databases such as Youtube Faces DB and Labeled Faces in the Wild (LFW), but
+does not provide a detailed analysis of clustering methods.
+A simple search on google scholar and other platforms show that only a few recent papers deal with the comparison of clustering methods on the state-of-art FaceNet system.
+A.F. Bijl at \cite{??} presents a good analysis, but it is focused only on the LFW and ISIS databases.
+
+Therefore, in this project, we analyze the quality of clustering algorithms when FaceNet is used as feature extractor on multiple databases, each with arbitrary properties.
+We perform a detailed study on three distinct databases, under two main perspecitives: the accuracy of cluster assignments and the semantics of assignment errors.
+We compare k-means, agglomerative clustering, spectral clustering, DBSCAN and mean-shift \cite{??}.
+Our experiments suggest that DBSCAN and mean-shift are the best options in most cases, since they achieve the highest accuracies without the need for knowing the number of clusters in advance.
+
 \section{Clustering Analysis}
 
 \subsection{Databases}
 
 In this project, we chose three face databases with different properties to evaluate the quality of the clustering methods.
-The first database, \textit{personal\_faces}, is a toy dataset of pictures of our teammates and classmates under random lighting and environmental conditions.
+The first database, \textit{personal\_faces}, is a small dataset containing arbitrary pictures of our teammates and classmates under random lighting and environmental conditions.
 The second database is \textit{Labeled Faces in the Wild} (LFW) \cite{??}, a large database of famous people under random circumstances.
 The third database is \textit{MUCT} \cite{??}, a reasonably large dataset of people under multiple predetermined lighting and camera angles.
 Both \textit{personal\_faces} and LFW contain an uneven number of face pictures per person, while MUCT has the same picture styles for every person.
@@ -208,7 +224,6 @@ For this reason, if the parameters are not well chosen, these algorithms will pr
 \end{figure}
 
 
-
 \textbf{Semantics Analysis}. To help visualize how errors are manifested over different techniques, we created a tool that organizes databases by grouping photos that share the same person.
 We tested it on \textit{personal\_faces} and analyzed results manually and qualitatively.
 In all cases, we notice that wrong picture assignments are usually correlated with similar face traits such as shape (of head, nose and mouth), beard color, the presence of glasses and the ethnicity.
@@ -267,6 +282,7 @@ Our experiments suggest that, regardless of method, the FaceNet model trained on
 Moreover, classification ends up being more accurate than clustering, because it handles overlapping better.
 For example, a simple k-NN classifier would be able to correctly predict faces of similar people by votation, whereas clustering methods would not clearly know whether data samples belong to the same person or not.
 As future work, we plan to study the impact of face expression and accessories on the embeddings computed by FaceNet trained on different databases.
+We also want to analyze how the $ARI$ scores and metrics such as recall and precision change when the number of clusters increase.
 
 \begin{thebibliography}{00}
 \bibitem{b1} Francisco de A.T. de Carvalho, Eduardo C. Simões, Lucas V.C. Santana, Marcelo R.P. Ferreira,
