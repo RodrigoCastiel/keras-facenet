@@ -276,11 +276,11 @@ An underlying problem which no technique avoided is assigning the same person wi
 When $K$ is not known a priori, DBSCAN and mean-shift are the best scoring options for face clustering of large databases.
 Their hyper-parameters are not sensitive to different input datasets.
 However, if $K$ is known, agglomerative cluster is a good option since it does not overestimate the number of clusters.
-Similarly DBSCAN, it is also able to find arbitrarily shaped clusters.
+Similarly to DBSCAN, it is also able to find arbitrarily shaped clusters.
 
 Our experiments suggest that, regardless of method, the FaceNet model trained on MS-Celeb-1M is sensitive to sunglasses.
 Moreover, classification ends up being more accurate than clustering, because it handles overlapping better.
-For example, a simple k-NN classifier would be able to correctly predict faces of similar people by votation, whereas clustering methods would not clearly know whether data samples belong to the same person or not.
+For example, a simple k-NN classifier would be able to correctly predict faces of similar people by votation, whereas clustering methods would not clearly know whether data samples in the same region belong to the same person or not.
 As future work, we plan to study the impact of face expression and accessories on the embeddings computed by FaceNet trained on different databases.
 We also want to analyze how the $ARI$ scores and metrics such as recall and precision change when the number of clusters increase.
 
