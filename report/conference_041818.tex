@@ -21,12 +21,12 @@
 
 \begin{document}
 
-\title{FaceNet Clustering Analysis}
+\title{FaceNet Cluster Analysis}
 
 \author{
 \IEEEauthorblockN{Rodrigo Castiel}
 \IEEEauthorblockA{\textit{Center for Informatics} \\
-\textit{Federal University of Pernambuco}\\
+\textit{Federal University of Pernambuco} \\
 Recife, Brazil \\
 rcrs2@cin.ufpe.br}
 }
@@ -36,10 +36,10 @@ rcrs2@cin.ufpe.br}
 
 \begin{abstract}
 In the last decade, deep-learning based techniques brought us a remarkable breakthrough in face recognition.
-Recently, Google Researchers proposed \textit{FaceNet}, a novel face recognition system that learns a mapping from face pictures to a feature-space where similarities are well described by simple euclidean distances \cite{??}.
+Recently, Google Researchers proposed \textit{FaceNet}, a novel face recognition system that learns a mapping from face pictures to a feature-space where similarities are well described by simple euclidean distances \cite{b1}.
 FaceNet may be combined with different clustering methods and classifiers; on famous face recognition databases, it currently achieves the best accuracy.
 In this paper, we use FaceNet as a feature extractor to perform a face clustering analysis on three different databases: a small personal dataset, Labeled Faces in the Wild (LFW) and MUCT.
-Our goal is to group pictures by person.
+Our goal is to group pictures by identity.
 We run k-means, agglomerative clustering, spectral clustering, DBSCAN and mean-shift with different parameters on all datasets.
 Experiments show that both DBSCAN and mean-shift achieve the best adjusted rand scores without even requiring the number of clusters to be known in advance.
 
@@ -52,19 +52,19 @@ clustering, deep-learning, face recognition, facenet
 \section{Introduction}
 
 Face recognition is a widely studied research field, whose large number of applications range from biometry to security.
-While traditional techniques required a predetermined set of features which were manually chosen by humans, recent papers propose advanced systems capable of learning the most informative and even abstract attributes for classification \cite{??}[survey].
-In 2015, Schroff et al. \cite{??} developed a novel system called \textit{FaceNet}.
+While traditional techniques required a predetermined set of features which were manually chosen by humans, recent papers propose advanced systems capable of learning the most informative and even abstract attributes for classification \cite{b6}.
+In 2015, Schroff et al. \cite{b1} developed a novel system called \textit{FaceNet}.
 Unlike previous deep learning approaches, FaceNet introduces the harmonic triplet loss function, which is the key for learning the embedding with greater \textit{representional efficiency}.
 
 According to the authors, FaceNet may be easily used for tasks like clustering and classification, since it is able to compute $128$-dimensional feature-vectors in an euclidean space where distances model the similarity between people.
 The paper presents record holder classification results on famous databases such as Youtube Faces DB and Labeled Faces in the Wild (LFW), but
 does not provide a detailed analysis of clustering methods.
 A simple search on google scholar and other platforms show that only a few recent papers deal with the comparison of clustering methods on the state-of-art FaceNet system.
-A.F. Bijl at \cite{??} presents a good analysis, but it is focused only on the LFW and ISIS databases.
+A.F. Bijl at \cite{b4} presents a good analysis, but it is focused only on the LFW and ISIS databases.
 
 Therefore, in this project, we analyze the quality of clustering algorithms when FaceNet is used as feature extractor on multiple databases, each with arbitrary properties.
 We perform a detailed study on three distinct databases, under two main perspecitives: the accuracy of cluster assignments and the semantics of assignment errors.
-We compare k-means, agglomerative clustering, spectral clustering, DBSCAN and mean-shift \cite{??}.
+We compare k-means, agglomerative clustering, spectral clustering, DBSCAN and mean-shift \cite{b2, b3}.
 Our experiments suggest that DBSCAN and mean-shift are the best options in most cases, since they achieve the highest accuracies without the need for knowing the number of clusters in advance.
 
 \section{Clustering Analysis}
@@ -73,12 +73,12 @@ Our experiments suggest that DBSCAN and mean-shift are the best options in most 
 
 In this project, we chose three face databases with different properties to evaluate the quality of the clustering methods.
 The first database, \textit{personal\_faces}, is a small dataset containing arbitrary pictures of our teammates and classmates under random lighting and environmental conditions.
-The second database is \textit{Labeled Faces in the Wild} (LFW) \cite{??}, a large database of famous people under random circumstances.
-The third database is \textit{MUCT} \cite{??}, a reasonably large dataset of people under multiple predetermined lighting and camera angles.
+The second database is \textit{Labeled Faces in the Wild} (LFW) \cite{b5}, a large database of famous people under random circumstances.
+The third database is \textit{MUCT} \cite{b7}, a reasonably large dataset of people under multiple predetermined lighting and camera angles.
 Both \textit{personal\_faces} and LFW contain an uneven number of face pictures per person, while MUCT has the same picture styles for every person.
 We picked \textit{personal\_faces} to perform a semantics analysis of the error pictures in a simple and clear way.
 
-Given the raw database, we use OpenCV's cascade classifier to detect faces in the pictures \cite{??}.
+Given the raw database, we use OpenCV's cascade classifier to detect faces in the pictures \cite{b8}.
 It does not always find valid faces in an image, which makes the number of extracted faces to be slightly lower than the actual dataset size.
 \textit{personal\_faces} contains $N = 59$ face pictures distributed over $K = 18$ clusters (people).
 MUCT contains $N = 3710$ faces distributed over $K = 276$ clusters.
@@ -118,12 +118,12 @@ There is much less overlapping than in LFW; in general, clusters are dense and c
   \label{pipeline}
 \end{figure}
 
-In order to properly assess the quality of the clustering techniques, we evaluate the \textit{adjusted rand index} (or simply $ARI$ \cite{??}) of each method on a series of random subsets sampled from the entire input databases.
+In order to properly assess the quality of the clustering techniques, we evaluate the \textit{adjusted rand index} (or simply $ARI$ \cite{b9}) of each method on a series of random subsets sampled from the entire input databases.
 Each clustering method, with its given parameter values, is executed $n_{eval} = 30$ times on a randomly sampled subset whose size is approximately $80\%$ of the total database size.
 At the end, we compute the average $ARI$ score of each set of runs.
 Figure \ref{pipeline} depicts the stages of our clustering experiments.
 We use a precomputed \textit{FaceNet} model trained on the Microsoft's MS-Celeb-1M database.
-This model was implemented by \textit{nyoki-mtl}, and is available on his \href{https://github.com/nyoki-mtl/keras-facenet}{github page}.
+This model was implemented by \textit{nyoki-mtl}, and is available on his github page \cite{b10}.
 It takes a $160 \times 160$ picture as input, and outputs a $128$-dimensional feature vector.
 
 Recall that k-means, agglomerative clustering and spectral clustering need a hyper-parameter $K$, that is, the number of clusters to be found.
@@ -285,18 +285,29 @@ As future work, we plan to study the impact of face expression and accessories o
 We also want to analyze how the $ARI$ scores and metrics such as recall and precision change when the number of clusters increase.
 
 \begin{thebibliography}{00}
-\bibitem{b1} Francisco de A.T. de Carvalho, Eduardo C. Simões, Lucas V.C. Santana, Marcelo R.P. Ferreira,
-Gaussian kernel c-means hard clustering algorithms with automated computation of the width hyper-parameters,
-Pattern Recognition,
-Volume 79,
-2018,
-Pages 370-386,
-ISSN 0031-3203,
-https://doi.org/10.1016/j.patcog.2018.02.018.
 
-\bibitem{b2} Vision Group, University of Massachusetts, 
-Image Segmentation Data,
-http://archive.ics.uci.edu/ml/machine-learning-databases/image/.
+\bibitem{b1} F. Schroff, D. Kalenichenko, and J. Philbin. Facenet: A unified embedding for face recognition and clustering. arXivpreprint arXiv:1503.03832, 2015.
+
+\bibitem{b2} A.K. Jain, Data clustering: 50 years beyond k-means, Pattern Recognition. Lett. 31
+(2010) 651–666
+
+\bibitem{b3} Cheng, Yizong (August 1995). "Mean Shift, Mode Seeking, and Clustering". IEEE Transactions on Pattern Analysis and Machine Intelligence. IEEE. 17 (8): 790–799. doi:10.1109/34.400568
+
+\bibitem{b4} A.F. Bijl, A. (2018). A comparison of clustering algorithms for face clustering. [online] Fse.studenttheses.ub.rug.nl. Available at: http://fse.studenttheses.ub.rug.nl/18064/1/Report\_research\_internship.pdf [Accessed 18 Nov. 2018].
+
+\bibitem{b5} Gary B. Huang, Manu Ramesh, Tamara Berg, and Erik Learned-Miller.
+Labeled Faces in the Wild: A Database for Studying Face Recognition in Unconstrained Environments.
+University of Massachusetts, Amherst, Technical Report 07-49, October, 2007.
+
+\bibitem{b6} Wang, M. and Deng, W. (2018). Deep Face Recognition: A Survey. [online] Arxiv.org. Available at: https://arxiv.org/abs/1804.06655 [Accessed 18 Nov. 2018].
+
+\bibitem{b7} Milborrow, Stephen \& Morkel, John \& Nicolls, Fred. (2018). The MUCT Landmarked Face Database.
+
+\bibitem{b8} Docs.opencv.org. (2018). Cascade Classifier — OpenCV 2.4.13.7 documentation. [online] Available at: https://docs.opencv.org/2.4/doc/tutorials/objdetect/cascade\_classifier/cascade\_classifier.html [Accessed 18 Nov. 2018].
+
+\bibitem{b9} W. M. Rand (1971). "Objective criteria for the evaluation of clustering methods". Journal of the American Statistical Association. American Statistical Association. 66 (336): 846–850. doi:10.2307/2284239. JSTOR 2284239
+
+\bibitem{b10} GitHub. (2018). nyoki-mtl/keras-facenet. [online] Available at: https://github.com/nyoki-mtl/keras-facenet [Accessed 18 Nov. 2018].
 
 \end{thebibliography}
 
